@@ -43,8 +43,8 @@ class UsoDetalleSerializer(ModelSerializer):
 
 class UsoSerializer(ModelSerializer):
     detalles = UsoDetalleSerializer(many=True, read_only=True)
-    cliente = ClienteSerializer()
-    concepto = ConceptoSerializer()
+    cliente_obj = ClienteSerializer(read_only=True, source='cliente')
+    concepto_obj = ConceptoSerializer(read_only=True, source='concepto')
 
     class Meta:
         model = Uso
@@ -58,6 +58,11 @@ class UsoSerializer(ModelSerializer):
         puntos_cliente = cliente.bolsas.filter(
             vencimiento__gte=timezone.now(), saldo__gt=0
         ).aggregate(total=Sum('saldo'))['total']
+
+        if not puntos_cliente:
+            raise ValidationError({
+                'p_utilizado': 'El cliente no posee puntos'
+            })
 
         if puntos_cliente < concepto.puntos_requerido:
             raise ValidationError({
