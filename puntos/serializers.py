@@ -20,7 +20,7 @@ class ClienteSerializer(ModelSerializer):
 
 
 class BolsaSerializer(ModelSerializer):
-    cliente = ClienteSerializer()
+    cliente_obj = ClienteSerializer(source='cliente', read_only=True)
 
     class Meta:
         model = Bolsa
@@ -43,6 +43,8 @@ class UsoDetalleSerializer(ModelSerializer):
 
 class UsoSerializer(ModelSerializer):
     detalles = UsoDetalleSerializer(many=True, read_only=True)
+    cliente = ClienteSerializer()
+    concepto = ConceptoSerializer()
 
     class Meta:
         model = Uso
@@ -53,12 +55,16 @@ class UsoSerializer(ModelSerializer):
         p_utilizado = attrs.get('p_utilizado')
         cliente = attrs.get('cliente')
 
-        if p_utilizado < concepto.puntos_requerido:
+        puntos_cliente = cliente.bolsas.filter(
+            vencimiento__gte=timezone.now(), saldo__gt=0
+        ).aggregate(total=Sum('saldo'))['total']
+
+        if puntos_cliente < concepto.puntos_requerido:
             raise ValidationError({
-                'p_utilizado': 'No son suficientes puntos para el concepto'
+                'p_utilizado': 'El cliente no posee suficientes puntos para el concepto'
             })
 
-        if p_utilizado > cliente.bolsas.filter(vencimiento__gte=timezone.now(), saldo__gt=0).aggregate(total=Sum('saldo'))['total']:
+        if p_utilizado > puntos_cliente:
             raise ValidationError({
                 'p_utilizado': 'El cliente no posee suficientes puntos'
             })

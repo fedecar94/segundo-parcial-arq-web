@@ -1,7 +1,7 @@
 import math
 from datetime import timedelta
 from math import floor
-
+import django_filters.rest_framework
 from django.db import transaction
 from django.utils import timezone
 from rest_framework.decorators import action
@@ -22,7 +22,7 @@ class AsignacionViewSet(ModelViewSet):
 
 
 class BolsaViewSet(GenericViewSet, ListModelMixin):
-    queryset = Bolsa.objects.all()
+    queryset = Bolsa.objects.all().order_by('id')
     serializer_class = BolsaSerializer
 
     def create(self, request, *args, **kwargs):
@@ -54,8 +54,9 @@ class ConceptoViewSet(ModelViewSet):
 
 
 class UsoViewSet(GenericViewSet, ListModelMixin):
-    queryset = Uso.objects.all()
+    queryset = Uso.objects.all().order_by('id')
     serializer_class = UsoSerializer
+    filter_backends = [django_filters.rest_framework.DjangoFilterBackend]
 
     def get_serializer_class(self):
         if self.action == 'calcular':
